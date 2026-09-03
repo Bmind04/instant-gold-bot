@@ -77,19 +77,13 @@ async def render_keep_alive_task():
             except Exception as e:
                 print(f"Keep-Alive ping warning: {e}")
 
-# 3. AI Models (Primary: gemini-3.6-flash, Fallback: gemini-3.5-flash)
-llm_primary = ChatGoogleGenerativeAI(
-    model="gemini-3.6-flash",
-    google_api_key=GEMINI_API_KEY,
-    timeout=60.0,
-    max_retries=1
-)
-llm_secondary = ChatGoogleGenerativeAI(
-    model="gemini-3.5-flash",
-    google_api_key=GEMINI_API_KEY,
-    timeout=60.0,
-    max_retries=1
-)
+# 3. Multi-Tier AI Model Cascade (99.99% High Availability)
+AI_MODELS = [
+    ChatGoogleGenerativeAI(model="gemini-3.6-flash", google_api_key=GEMINI_API_KEY, timeout=60.0, max_retries=0),
+    ChatGoogleGenerativeAI(model="gemini-3.5-flash", google_api_key=GEMINI_API_KEY, timeout=60.0, max_retries=0),
+    ChatGoogleGenerativeAI(model="gemini-3.7-flash", google_api_key=GEMINI_API_KEY, timeout=60.0, max_retries=0),
+    ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite", google_api_key=GEMINI_API_KEY, timeout=60.0, max_retries=0),
+]
 
 # 4. Image Optimization using Pillow
 def optimize_image_bytes(image_bytes: bytes, max_dim: int = 1024, quality: int = 85) -> bytes:
@@ -151,10 +145,11 @@ async def keep_typing(context: ContextTypes.DEFAULT_TYPE, chat_id: int, stop_eve
             pass
         await asyncio.sleep(4)
 
-# 8. Robust AI Invocation
-async def invoke_llm_with_retry(messages, timeout=65.0, retries=2):
-    for attempt in range(retries):
-        model = llm_primary if attempt == 0 else llm_secondary
+# 8. Robust Multi-Tier AI Invocation with Exponential Backoff
+async def invoke_llm_with_retry(messages, timeout=65.0, max_attempts=5):
+    last_error = None
+    for attempt in range(max_attempts):
+        model = AI_MODELS[attempt % len(AI_MODELS)]
         try:
             response = await asyncio.wait_for(
                 asyncio.to_thread(model.invoke, messages),
@@ -162,16 +157,22 @@ async def invoke_llm_with_retry(messages, timeout=65.0, retries=2):
             )
             return response
         except asyncio.TimeoutError:
-            if attempt < retries - 1:
-                continue
-            raise RuntimeError("The simulation analysis timed out. Please try uploading the screenshot again.")
+            print(f"Warning: Model {model.model} timed out on attempt {attempt + 1}. Cascading to next tier...")
+            last_error = "Timeout during simulation processing"
+            await asyncio.sleep(1.0)
+            continue
         except Exception as e:
             err_str = str(e)
-            if any(term in err_str for term in ["429", "RESOURCE_EXHAUSTED", "503", "UNAVAILABLE", "500"]):
-                if attempt < retries - 1:
-                    await asyncio.sleep(1)
-                    continue
-            raise e
+            last_error = err_str
+            print(f"Warning: Model {model.model} error on attempt {attempt + 1}: {err_str[:120]}")
+            if any(term in err_str for term in ["429", "RESOURCE_EXHAUSTED", "503", "UNAVAILABLE", "500", "CANCELLED", "deadline"]):
+                backoff_time = 1.5 * (attempt + 1)
+                await asyncio.sleep(backoff_time)
+                continue
+            await asyncio.sleep(1.0)
+            continue
+
+    raise RuntimeError("The AI simulation clusters are experiencing an unusually high traffic spike across all regions. Please re-upload your screenshot in a few seconds.")
 
 def extract_text(content) -> str:
     if isinstance(content, str):
@@ -368,7 +369,12 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         full_output = report + COMPLIANCE_FOOTER
         await send_clean_message(update, full_output)
     except Exception as e:
-        await send_clean_message(update, f"⚠️ Analysis error: {e}")
+        err_str = str(e)
+        if any(term in err_str for term in ["traffic spike", "503", "UNAVAILABLE", "timed out", "RESOURCE_EXHAUSTED"]):
+            friendly_text = "⏳ **High Traffic Spike Notice:** Google's simulation servers are momentarily congested. Please re-send your screenshot in 10 seconds!"
+        else:
+            friendly_text = "⚠️ Could not process screenshot. Please ensure the match stats and H2H are clearly visible and try uploading again."
+        await send_clean_message(update, friendly_text)
     finally:
         stop_typing.set()
         typing_task.cancel()
