@@ -207,11 +207,11 @@ MANDATORY INSTRUCTIONS:
 1. HEADER LOCK: Identify the EXACT MATCH from the TOP HEADER (e.g. 'AST vs MCI', 'LIV vs BHA', 'BRE vs COV').
 2. PIXEL-EXACT STATS: Read exact Form % circles, League positions, H2H counters (Home Wins, Draws, Away Wins), and Average Goals.
 3. THE 4 RNG PILLARS:
-   - PILLAR 1: RESPECT THE RNG SEED: If Home has higher Win %, never pick X2! If Away has higher Win %, never pick 1X!
+   - PILLAR 1: NO 1X / NO X2 LAW: Double Chance 1X and X2 are STRICTLY DISQUALIFIED in Virtuals! The ONLY Double Chance selection allowed is Double Chance 12 (Home or Away Win - No Draw) 👑!
    - PILLAR 2: ZERO-DRAW MASTER KEY: If H2H has >= 2 games and Draws == 0, MANDATORY PICK is Double Chance 12 (Home or Away Win - No Draw) 👑!
    - PILLAR 3: LOW-GOAL COMPRESSION: If Combined Average Goals <= 1.60, MANDATORY PICK is Under 3.5 Match Goals 👑!
    - PILLAR 4: GOAL BOUNDS EXCLUSIVE: Use Goal Bound 1–4 Goals 👑 (~90% blanket), Goal Bound 1–3 Goals 👑 (@ ~1.45 odds), or Goal Bound 2–4 Goals 👑!
-4. STRICT DISQUALIFICATIONS: NEVER recommend Asian Handicap (not offered on Virtuals) and NEVER recommend Over 1.5, Over 2.5, 2H Over 0.5, or BTTS Yes!
+4. STRICT DISQUALIFICATIONS: NEVER recommend Double Chance 1X, NEVER recommend Double Chance X2, NEVER recommend Asian Handicap, and NEVER recommend Over 1.5, Over 2.5, 2H Over 0.5, or BTTS Yes!
 
 Apply Framework v11.0 Virtual RNG Decision Engine and provide the single Gold Standard Recommendation!"""
             },
@@ -266,7 +266,7 @@ The AI automatically:
 2. Reads pixel-exact form percentages, league positions, and H2H records.
 3. Evaluates simulation seed weights and goal flow compression.
 4. Delivers the **#1 Gold Standard Pick**:
-   • 🛡️ **Double Chance (1X, 12, X2) 👑**
+   • 🛡️ **Double Chance 12 (Home or Away Win - No Draw) 👑**
    • 🎯 **Exclusive Goal Bounds (1–4 Goals, 1–3 Goals, 2–4 Goals) 👑**
    • 🔒 **Under 3.5 & Under 2.5 Match Goals 👑**
 
@@ -308,7 +308,7 @@ This AI is specialized strictly in **Random Number Generator (RNG) Virtual Footb
 ---
 
 🎯 **THE EXCLUSIVE VIRTUAL MARKETS WE TARGET:**
-• 🛡️ **Double Chance (1X, 12, X2):** High win rate, insulating against simulated draws and capitalizing on form parity.
+• 🛡️ **Double Chance 12 (No Draw):** Covers ANY team winning (1-0, 2-1, 0-1, 1-2, 3-0, etc.). 1X and X2 are strictly banned to prevent upset draws/losses!
 • 🎯 **Goal Bound 1–4 Goals:** The ultimate ~90% win rate blanket covering almost all virtual simulation finishes!
 • 🎯 **Goal Bound 1–3 Goals:** High-value banker covering low/medium scoring games.
 • 🔒 **Under 3.5 Goals:** For defensive gridlocks.
