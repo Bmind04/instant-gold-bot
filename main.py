@@ -250,8 +250,15 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 ---
 
-⚡ **HOW TO USE (FRICTIONLESS & INSTANT):**
-Simply **send any screenshot** from SportyBet, Bet9ja, or 1xBet Instant Football (the Stats / H2H screen)! 📸
+⚠️ **STRICT BOT RULES:**
+• 🎮 **100% Virtual / Instant Football ONLY** (SportyBet, Bet9ja, 1xBet).
+• ❌ **NO real-world games supported.**
+• 📸 **Screenshots ONLY:** All predictions require a stats screenshot for pixel-exact RNG analysis. Text match queries are disabled!
+
+---
+
+⚡ **HOW TO GET A WINNING PICK (INSTANT):**
+Simply **send any screenshot** of an Instant Football fixture (the Stats / H2H screen)! 📸
 
 The AI automatically:
 1. Locks onto the header matchup (e.g. `AST vs MCI`).
@@ -264,13 +271,12 @@ The AI automatically:
 
 ---
 
-📋 **DIRECTORY OF COMMANDS:**
-• 📸 **Send any screenshot:** Instant automated analysis!
-• `/predict <Match>` — Text match analysis (e.g. `/predict ARS vs CHE`)
+📋 **COMMANDS:**
+• 📸 **Send any Virtual Stats Screenshot:** Instant automated analysis!
+• `/help` — Screenshot capture guide & tips
 • `/responsible` — 🔞 18+ Policy, Bankroll Management & Safety Rules
 • `/privacy` — Zero-Data Retention Privacy Policy
 • `/terms` — Terms of Service & Disclaimer
-• `/help` — Full usage guide
 
 ---
 🔞 *18+ Only | Bet Responsibly | Virtual simulation modeling for informational purposes.*"""
@@ -281,9 +287,16 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 ---
 
-📸 **TAKING THE BEST SCREENSHOT:**
-1. Open your bookmaker's **Instant Football / Virtual Football** match.
-2. Tap the **Stats / H2H** icon for the upcoming fixture.
+🎮 **VIRTUAL FOOTBALL ONLY (24/7):**
+This AI is specialized strictly in **Random Number Generator (RNG) Virtual Football** simulations (SportyBet Instant Football, Bet9ja Virtual, 1xBet).
+❌ We DO NOT predict real-world soccer matches.
+❌ We DO NOT accept text match names.
+
+---
+
+📸 **HOW TO GET PREDICTIONS (SCREENSHOTS ONLY):**
+1. Open your bookmaker's **Instant Football / Virtual Football** section.
+2. Click on the upcoming match to view the **Stats / H2H** screen.
 3. Take a screenshot showing:
    • The top header (`Team A vs Team B`).
    • The Form % circles and League position.
@@ -311,35 +324,6 @@ async def privacy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def terms_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_clean_message(update, TERMS_OF_SERVICE)
-
-async def predict_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    if user.username and user.username.lower().replace("@", "") in ADMIN_USERNAMES:
-        ADMIN_USER_IDS.add(user.id)
-    log_user_activity(user.id, user.username or "", user.first_name or "", query_type="predict")
-
-    allowed, wait_sec = check_rate_limit(user.id)
-    if not allowed:
-        await update.message.reply_text(f"⏳ **Rate Limit Notice:** Please wait {wait_sec} seconds before requesting another analysis.")
-        return
-
-    match_text = " ".join(context.args).strip() if context.args else ""
-    if not match_text:
-        await update.message.reply_text("Please specify a match. Example: `/predict Arsenal vs Chelsea`")
-        return
-
-    chat_id = update.effective_chat.id
-    stop_typing = asyncio.Event()
-    typing_task = asyncio.create_task(keep_typing(context, chat_id, stop_typing))
-    try:
-        report = await analyze_virtual_match(text_input=match_text)
-        full_output = report + COMPLIANCE_FOOTER
-        await send_clean_message(update, full_output)
-    except Exception as e:
-        await send_clean_message(update, f"⚠️ Analysis error: {e}")
-    finally:
-        stop_typing.set()
-        typing_task.cancel()
 
 # 12. Photo Message Handler (Direct Upload with Zero Commands Needed)
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -389,7 +373,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         stop_typing.set()
         typing_task.cancel()
 
-# 13. Text Message Handler
+# 13. Text Message Handler (Strictly Screenshots Only Enforcement)
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_id = user.id
@@ -397,30 +381,21 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ADMIN_USER_IDS.add(user_id)
     log_user_activity(user_id, user.username or "", user.first_name or "", query_type="text")
 
-    text = (update.message.text or "").strip()
-    if any(sep in text.lower() for sep in [" vs ", " v ", " - "]):
-        allowed, wait_sec = check_rate_limit(user_id)
-        if not allowed:
-            await update.message.reply_text(f"⏳ **Rate Limit Notice:** Please wait {wait_sec} seconds.")
-            return
+    # Inform user that text matching is disabled and only virtual screenshots are accepted
+    msg = """📸 **SCREENSHOTS ONLY | 24/7 VIRTUAL FOOTBALL** 🎮
 
-        chat_id = update.effective_chat.id
-        stop_typing = asyncio.Event()
-        typing_task = asyncio.create_task(keep_typing(context, chat_id, stop_typing))
-        try:
-            report = await analyze_virtual_match(text_input=text)
-            full_output = report + COMPLIANCE_FOOTER
-            await send_clean_message(update, full_output)
-        except Exception as e:
-            await send_clean_message(update, f"⚠️ Analysis error: {e}")
-        finally:
-            stop_typing.set()
-            typing_task.cancel()
-    else:
-        await update.message.reply_text(
-            "📸 **Send a screenshot** of any Instant Football / Virtual match to get an instant prediction!\n\n"
-            "Or type `/predict Team A vs Team B`.\nType `/help` for tips or `/responsible` for bankroll guidance."
-        )
+⚠️ *Text match queries and real-world football are NOT supported.*
+
+This AI operates exclusively on **Virtual & Instant Football simulation screens** (SportyBet Instant Football, Bet9ja Virtuals, 1xBet).
+
+👉 **How to use:**
+1. Open your bookmaker's Instant Football fixture.
+2. Click to open the **Stats / H2H** screen.
+3. Take a screenshot and **send the photo directly here**!
+The AI will immediately extract the simulation seed and deliver the #1 Gold Standard Pick!
+
+Type `/help` for screenshot tips or `/responsible` for bankroll safety guidance."""
+    await send_clean_message(update, msg)
 
 # 14. Admin Analytics Dashboard & Broadcast Commands
 async def users_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -507,8 +482,6 @@ def main():
     app.add_handler(CommandHandler("disclaimer", responsible_command))
     app.add_handler(CommandHandler("privacy", privacy_command))
     app.add_handler(CommandHandler("terms", terms_command))
-    app.add_handler(CommandHandler("predict", predict_command))
-    app.add_handler(CommandHandler("viv", predict_command))
 
     # Admin commands
     app.add_handler(CommandHandler("users", users_command))
