@@ -35,6 +35,11 @@ from compliance import (
     TERMS_OF_SERVICE,
     COMPLIANCE_FOOTER
 )
+from tracker import init_db, log_user_activity, get_analytics_summary, get_all_user_ids
+
+# Admin security list
+ADMIN_USERNAMES = {"lost_in_space000"}
+ADMIN_USER_IDS = set()
 
 # Load environment variables
 load_dotenv()
@@ -235,6 +240,11 @@ async def send_clean_message(update: Update, text: str):
 
 # 11. Command Handlers
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    if user.username and user.username.lower().replace("@", "") in ADMIN_USERNAMES:
+        ADMIN_USER_IDS.add(user.id)
+    log_user_activity(user.id, user.username or "", user.first_name or "", query_type="interaction")
+
     msg = """👋 **WELCOME TO INSTANTGOLDBOT!** 🎮👑
 *24/7 Autonomous Virtual & Instant Football Quantitative AI*
 
@@ -303,8 +313,12 @@ async def terms_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_clean_message(update, TERMS_OF_SERVICE)
 
 async def predict_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    allowed, wait_sec = check_rate_limit(user_id)
+    user = update.effective_user
+    if user.username and user.username.lower().replace("@", "") in ADMIN_USERNAMES:
+        ADMIN_USER_IDS.add(user.id)
+    log_user_activity(user.id, user.username or "", user.first_name or "", query_type="predict")
+
+    allowed, wait_sec = check_rate_limit(user.id)
     if not allowed:
         await update.message.reply_text(f"⏳ **Rate Limit Notice:** Please wait {wait_sec} seconds before requesting another analysis.")
         return
@@ -329,7 +343,12 @@ async def predict_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # 12. Photo Message Handler (Direct Upload with Zero Commands Needed)
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
+    user = update.effective_user
+    user_id = user.id
+    if user.username and user.username.lower().replace("@", "") in ADMIN_USERNAMES:
+        ADMIN_USER_IDS.add(user_id)
+    log_user_activity(user_id, user.username or "", user.first_name or "", query_type="photo")
+
     chat_id = update.effective_chat.id
     media_group_id = update.message.media_group_id
     curr_t = time.time()
@@ -372,9 +391,14 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # 13. Text Message Handler
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    user_id = user.id
+    if user.username and user.username.lower().replace("@", "") in ADMIN_USERNAMES:
+        ADMIN_USER_IDS.add(user_id)
+    log_user_activity(user_id, user.username or "", user.first_name or "", query_type="text")
+
     text = (update.message.text or "").strip()
     if any(sep in text.lower() for sep in [" vs ", " v ", " - "]):
-        user_id = update.effective_user.id
         allowed, wait_sec = check_rate_limit(user_id)
         if not allowed:
             await update.message.reply_text(f"⏳ **Rate Limit Notice:** Please wait {wait_sec} seconds.")
@@ -398,9 +422,82 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Or type `/predict Team A vs Team B`.\nType `/help` for tips or `/responsible` for bankroll guidance."
         )
 
-# 14. Main Entrypoint
+# 14. Admin Analytics Dashboard & Broadcast Commands
+async def users_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Exclusive Admin Command: Displays comprehensive audience and prediction statistics."""
+    user = update.effective_user
+    is_admin = (user.username and user.username.lower().replace("@", "") in ADMIN_USERNAMES) or (user.id in ADMIN_USER_IDS)
+    if not is_admin:
+        await update.message.reply_text("🔒 **Access Denied:** This command is restricted to the bot administrator (@Lost_in_space000).")
+        return
+
+    ADMIN_USER_IDS.add(user.id)
+    stats = get_analytics_summary()
+
+    recent_lines = []
+    for idx, (uname, fname, qcount, last_seen) in enumerate(stats["recent_users"], 1):
+        dt_str = last_seen.split("T")[0] if "T" in str(last_seen) else str(last_seen)[:10]
+        recent_lines.append(f"{idx}. **{uname}** ({fname}) — `{qcount} queries` [_{dt_str}_]")
+
+    recent_text = "\n".join(recent_lines) if recent_lines else "_No users recorded yet._"
+
+    msg = f"""📊 **INSTANTGOLDBOT — ADMIN ANALYTICS DASHBOARD**
+*Live Audience & Prediction Engagement Record*
+
+---
+
+👥 **AUDIENCE METRICS:**
+• **Total Registered Users:** `{stats['total_users']}`
+• 🟢 **Active Users (Last 24h):** `{stats['active_24h']}`
+• 📈 **Active Users (Last 7 Days):** `{stats['active_7d']}`
+
+🎮 **PREDICTION ACTIVITY:**
+• **Total Predictions Delivered:** `{stats['total_queries']}`
+• 📸 **Photo Screenshot Audits:** `{stats['photo_queries']}`
+• 💬 **Text Match Queries:** `{stats['text_queries']}`
+
+---
+
+📋 **TOP 10 RECENT ACTIVE USERS:**
+{recent_text}
+
+---
+👑 *Admin Portal Authorized for @{user.username or user.id}*"""
+    await send_clean_message(update, msg)
+
+async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Exclusive Admin Command: Broadcasts an announcement to all registered users."""
+    user = update.effective_user
+    is_admin = (user.username and user.username.lower().replace("@", "") in ADMIN_USERNAMES) or (user.id in ADMIN_USER_IDS)
+    if not is_admin:
+        await update.message.reply_text("🔒 **Access Denied:** Admin only.")
+        return
+
+    broadcast_msg = " ".join(context.args).strip() if context.args else ""
+    if not broadcast_msg:
+        await update.message.reply_text("Usage: `/broadcast <Your announcement message here...>`")
+        return
+
+    user_ids = get_all_user_ids()
+    sent_count = 0
+    fail_count = 0
+
+    await update.message.reply_text(f"📢 Starting broadcast transmission to {len(user_ids)} registered users...")
+    for uid in user_ids:
+        try:
+            await context.bot.send_message(chat_id=uid, text=broadcast_msg, parse_mode="Markdown")
+            sent_count += 1
+        except Exception:
+            fail_count += 1
+        await asyncio.sleep(0.05)
+
+    await update.message.reply_text(f"✅ **Broadcast Completed!**\n• Successfully Delivered: `{sent_count}`\n• Failed/Blocked: `{fail_count}`")
+
+# 15. Main Entrypoint
 def main():
     print("🚀 Initializing InstantGoldBot...")
+    init_db()
+
     request_kwargs = HTTPXRequest(connect_timeout=60.0, read_timeout=60.0, write_timeout=60.0)
     app = Application.builder().token(TELEGRAM_TOKEN).request(request_kwargs).build()
 
@@ -412,6 +509,12 @@ def main():
     app.add_handler(CommandHandler("terms", terms_command))
     app.add_handler(CommandHandler("predict", predict_command))
     app.add_handler(CommandHandler("viv", predict_command))
+
+    # Admin commands
+    app.add_handler(CommandHandler("users", users_command))
+    app.add_handler(CommandHandler("admin", users_command))
+    app.add_handler(CommandHandler("stats", users_command))
+    app.add_handler(CommandHandler("broadcast", broadcast_command))
 
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
