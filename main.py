@@ -37,6 +37,7 @@ from compliance import (
     COMPLIANCE_FOOTER
 )
 from tracker import init_db, log_user_activity, get_analytics_summary, get_all_user_ids
+from fixtures import resolve_match_details
 
 # Admin security list
 ADMIN_USERNAMES = {"lost_in_space000"}
@@ -239,7 +240,33 @@ def is_saturday_today() -> tuple[bool, str]:
     return now_wat.weekday() == 5, day_name
 
 async def analyze_real_match(image_bytes: bytes = None, text_input: str = "") -> str:
-    """Quantitative analysis engine for Saturday real-world soccer fixtures."""
+    """Quantitative analysis engine for Saturday real-world soccer fixtures with live schedule grounding."""
+    fixture_info = await resolve_match_details(text_input) if text_input else None
+
+    live_context = ""
+    if fixture_info and fixture_info.get("verified"):
+        live_context = f"""
+VERIFIED REAL-TIME FIXTURE & SCHEDULE METRICS (SOURCE: THE-ODDS-API):
+• Official Home Team: {fixture_info['home']}
+• Official Away Team: {fixture_info['away']}
+• Verified Official Competition: {fixture_info['league']}
+• Verified Kick-off Date & Time: {fixture_info['kickoff']}
+• Sharp Bookmaker 1X2 Odds: {fixture_info['odds']}
+
+CRITICAL MANDATE: In your output header, you MUST strictly use:
+📋 FIXTURE: {fixture_info['home']} vs {fixture_info['away']}
+🏆 COMPETITION: {fixture_info['league']}
+🗓️ DATE & KICKOFF: {fixture_info['kickoff']}
+"""
+    elif fixture_info:
+        live_context = f"""
+FIXTURE SCHEDULE METRICS:
+• Home Team: {fixture_info['home']}
+• Away Team: {fixture_info['away']}
+• Season: 2026/27 European Football Campaign (September 2026)
+• Matchday Date: {fixture_info['kickoff']}
+"""
+
     messages = [SystemMessage(content=FRAMEWORK_SATURDAY_REAL_MATCH_PROMPT)]
     if image_bytes:
         optimized = optimize_image_bytes(image_bytes)
@@ -248,11 +275,11 @@ async def analyze_real_match(image_bytes: bytes = None, text_input: str = "") ->
             {
                 "type": "text",
                 "text": f"""Analyze this Real-World Soccer match stats screenshot for the Saturday Special matchday.
-User Input: {text_input if text_input else 'Audit this real-world fixture and provide the single Gold Standard Recommendation.'}
-
+User Input / Match: {text_input if text_input else 'Audit this real-world fixture and provide the single Gold Standard Recommendation.'}
+{live_context}
 MANDATORY REAL-WORLD AUDIT INSTRUCTIONS:
-1. Identify the teams and competition clearly.
-2. Provide form, table standings, H2H record, and goal flow expectations.
+1. Identify the teams and competition clearly using the verified schedule metrics above.
+2. Provide form, table standings, H2H record, and goal flow expectations for the active 2026/27 season.
 3. Deliver the #1 Gold Standard Pick (Double Chance, Over 1.5, Under 3.5, or Draw No Bet) with estimated odds!"""
             },
             {
@@ -263,8 +290,8 @@ MANDATORY REAL-WORLD AUDIT INSTRUCTIONS:
         messages.append(HumanMessage(content=prompt_content))
     else:
         messages.append(HumanMessage(content=f"""Execute a rigorous Saturday Quantitative Audit for this real-world soccer fixture:
-Fixture: {text_input}
-
+User Request: {text_input}
+{live_context}
 Deliver the complete tactical breakdown and the single Gold Standard Recommendation!"""))
 
     resp = await invoke_llm_with_retry(messages)
