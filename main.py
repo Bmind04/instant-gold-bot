@@ -12,6 +12,7 @@ Features:
 import os
 import io
 import time
+import datetime
 import base64
 import asyncio
 import http.server
@@ -28,7 +29,7 @@ from telegram.request import HTTPXRequest
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from prompt import FRAMEWORK_VIRTUAL_FOOTBALL_PROMPT
+from prompt import FRAMEWORK_VIRTUAL_FOOTBALL_PROMPT, FRAMEWORK_SATURDAY_REAL_MATCH_PROMPT
 from compliance import (
     RESPONSIBLE_GAMING_POLICY,
     PRIVACY_POLICY,
@@ -230,6 +231,45 @@ Apply Framework v11.0 Virtual RNG Decision Engine and provide the single Gold St
     resp = await invoke_llm_with_retry(messages)
     return extract_text(resp.content).strip()
 
+# 9b. Saturday Real Match Analysis Helper
+def is_saturday_today() -> tuple[bool, str]:
+    """Returns True if today is Saturday in West Africa Time (WAT = UTC+1)."""
+    now_wat = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=1)))
+    day_name = now_wat.strftime("%A")
+    return now_wat.weekday() == 5, day_name
+
+async def analyze_real_match(image_bytes: bytes = None, text_input: str = "") -> str:
+    """Quantitative analysis engine for Saturday real-world soccer fixtures."""
+    messages = [SystemMessage(content=FRAMEWORK_SATURDAY_REAL_MATCH_PROMPT)]
+    if image_bytes:
+        optimized = optimize_image_bytes(image_bytes)
+        b64_img = base64.b64encode(optimized).decode("utf-8")
+        prompt_content = [
+            {
+                "type": "text",
+                "text": f"""Analyze this Real-World Soccer match stats screenshot for the Saturday Special matchday.
+User Input: {text_input if text_input else 'Audit this real-world fixture and provide the single Gold Standard Recommendation.'}
+
+MANDATORY REAL-WORLD AUDIT INSTRUCTIONS:
+1. Identify the teams and competition clearly.
+2. Provide form, table standings, H2H record, and goal flow expectations.
+3. Deliver the #1 Gold Standard Pick (Double Chance, Over 1.5, Under 3.5, or Draw No Bet) with estimated odds!"""
+            },
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}
+            }
+        ]
+        messages.append(HumanMessage(content=prompt_content))
+    else:
+        messages.append(HumanMessage(content=f"""Execute a rigorous Saturday Quantitative Audit for this real-world soccer fixture:
+Fixture: {text_input}
+
+Deliver the complete tactical breakdown and the single Gold Standard Recommendation!"""))
+
+    resp = await invoke_llm_with_retry(messages)
+    return extract_text(resp.content).strip()
+
 # 10. Message Sending Helper
 async def send_clean_message(update: Update, text: str):
     if len(text) > 4000:
@@ -246,19 +286,23 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ADMIN_USER_IDS.add(user.id)
     log_user_activity(user.id, user.username or "", user.first_name or "", query_type="interaction")
 
-    msg = """👋 **WELCOME TO INSTANTGOLDBOT!** 🎮👑
+    is_sat, day_name = is_saturday_today()
+    sat_banner = """🔥 **SATURDAY SPECIAL: /analyse IS LIVE TODAY!** ⚽️
+*Real-world match analysis is unlocked for today's big European league matches!*
+👉 **Type:** `/analyse <Team A vs Team B>` (e.g. `/analyse Arsenal vs Chelsea`)
+*Or upload a match stats screenshot with caption `/analyse`!*
+
+---
+""" if is_sat else f"""💡 *Note: Real-world soccer analysis unlocks exclusively on Saturdays with `/analyse`! (Today is {day_name}).*
+
+---
+"""
+
+    msg = f"""👋 **WELCOME TO INSTANTGOLDBOT!** 🎮👑
 *24/7 Autonomous Virtual & Instant Football Quantitative AI*
 
 ---
-
-⚠️ **STRICT BOT RULES:**
-• 🎮 **100% Virtual / Instant Football ONLY** (SportyBet, Bet9ja, 1xBet).
-• ❌ **NO real-world games supported.**
-• 📸 **Screenshots ONLY:** All predictions require a stats screenshot for pixel-exact RNG analysis. Text match queries are disabled!
-
----
-
-⚡ **HOW TO GET A WINNING PICK (INSTANT):**
+{sat_banner}⚡ **HOW TO GET 24/7 VIRTUAL PICKS (SCREENSHOTS ONLY):**
 Simply **send any screenshot** of an Instant Football fixture (the Stats / H2H screen)! 📸
 
 The AI automatically:
@@ -273,8 +317,9 @@ The AI automatically:
 ---
 
 📋 **COMMANDS:**
-• 📸 **Send any Virtual Stats Screenshot:** Instant automated analysis!
-• `/help` — Screenshot capture guide & tips
+• 📸 **Send any Virtual Stats Screenshot:** Instant automated 24/7 analysis!
+• `/analyse <Match>` — 🔥 Saturday-Exclusive Real Match Analysis!
+• `/help` — Full guide, /analyse instructions & screenshot tips
 • `/responsible` — 🔞 18+ Policy, Bankroll Management & Safety Rules
 • `/privacy` — Zero-Data Retention Privacy Policy
 • `/terms` — Terms of Service & Disclaimer
@@ -284,19 +329,29 @@ The AI automatically:
     await send_clean_message(update, msg)
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = """📖 **INSTANTGOLDBOT — USER GUIDE & PRO TIPS**
+    is_sat, day_name = is_saturday_today()
+    status_text = "🟢 **UNLOCKED TODAY (Saturday)**" if is_sat else f"🔒 *Locked today (Today is {day_name}). Unlocks every Saturday!*"
+
+    msg = f"""📖 **INSTANTGOLDBOT — USER GUIDE & INSTRUCTIONS**
 
 ---
 
-🎮 **VIRTUAL FOOTBALL ONLY (24/7):**
-This AI is specialized strictly in **Random Number Generator (RNG) Virtual Football** simulations (SportyBet Instant Football, Bet9ja Virtual, 1xBet).
-❌ We DO NOT predict real-world soccer matches.
-❌ We DO NOT accept text match names.
+🔥 **SATURDAY REAL MATCH ANALYSIS (`/analyse`):**
+Status: {status_text}
+Every **Saturday**, you can analyze real-world football games (Premier League, La Liga, Serie A, etc.)!
+• **Format:** `/analyse Team A vs Team B`
+  *Example:* `/analyse Arsenal vs Chelsea`
+  *Example:* `/analyse Liverpool vs Bournemouth`
+  *Example:* `/analyse Real Madrid vs Barcelona`
+• **Screenshot Mode:** Upload any match stats screenshot with caption `/analyse`!
 
 ---
 
-📸 **HOW TO GET PREDICTIONS (SCREENSHOTS ONLY):**
-1. Open your bookmaker's **Instant Football / Virtual Football** section.
+🎮 **24/7 VIRTUAL FOOTBALL (SCREENSHOTS ONLY):**
+This AI operates around the clock on **Random Number Generator (RNG) Virtual Football** simulations (SportyBet Instant Football, Bet9ja Virtual, 1xBet).
+
+📸 **HOW TO GET VIRTUAL PREDICTIONS:**
+1. Open your bookmaker's **Instant Football** section.
 2. Click on the upcoming match to view the **Stats / H2H** screen.
 3. Take a screenshot showing:
    • The top header (`Team A vs Team B`).
@@ -326,13 +381,82 @@ async def privacy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def terms_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_clean_message(update, TERMS_OF_SERVICE)
 
-# 12. Photo Message Handler (Direct Upload with Zero Commands Needed)
+# 12. Saturday Real Match Analysis Command (/analyse)
+async def analyse_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Saturday-Exclusive command for real-world soccer fixtures."""
+    user = update.effective_user
+    user_id = user.id
+    if user.username and user.username.lower().replace("@", "") in ADMIN_USERNAMES:
+        ADMIN_USER_IDS.add(user_id)
+
+    is_sat, day_name = is_saturday_today()
+    if not is_sat:
+        msg = f"""📅 **SATURDAY-EXCLUSIVE FEATURE!** ⚽️
+
+The `/analyse` real-world match engine is exclusively unlocked every **Saturday** during the big European league matchday!
+
+Today is **{day_name}**.
+• On weekdays, please upload your 24/7 **Virtual / Instant Football** stats screenshots!
+• Check back on **Saturday** to analyze real-world Premier League, La Liga, Serie A, and Bundesliga fixtures!"""
+        await send_clean_message(update, msg)
+        return
+
+    # Saturday is active! Check input
+    match_input = " ".join(context.args).strip() if context.args else ""
+    if not match_input:
+        msg = """🔥 **SATURDAY SPECIAL REAL MATCH ANALYSIS UNLOCKED!** ⚽️👑
+*Quantitative tactical breakdown for today's big real-world football games!*
+
+---
+
+📋 **HOW TO USE TODAY (SATURDAY):**
+• **Command Format:** `/analyse <Team A vs Team B>`
+  *Example:* `/analyse Arsenal vs Chelsea`
+  *Example:* `/analyse Liverpool vs Bournemouth`
+  *Example:* `/analyse Real Madrid vs Barcelona`
+  *Example:* `/analyse Man City vs Tottenham`
+• **Screenshot Mode:** Upload any match stats screenshot with caption `/analyse`!
+
+⚡ **WHAT YOU RECEIVE:**
+• Detailed Form & League Table Standing
+• H2H Historical Clash Record & Dynamics
+• Goal Flow Expectancy & Over/Under Modeling
+• 👑 **The #1 Gold Standard Pick** with estimated odds!"""
+        await send_clean_message(update, msg)
+        return
+
+    # Check rate limit
+    allowed, wait_sec = check_rate_limit(user_id)
+    if not allowed:
+        await update.message.reply_text(f"⏳ **Rate Limit Notice:** Please wait {wait_sec} seconds before requesting another analysis.")
+        return
+
+    log_user_activity(user_id, user.username or "", user.first_name or "", query_type="analyse_saturday")
+
+    chat_id = update.effective_chat.id
+    stop_typing = asyncio.Event()
+    typing_task = asyncio.create_task(keep_typing(context, chat_id, stop_typing))
+    try:
+        report = await analyze_real_match(text_input=match_input)
+        full_output = report + COMPLIANCE_FOOTER
+        await send_clean_message(update, full_output)
+    except Exception as e:
+        err_str = str(e)
+        if any(term in err_str for term in ["traffic spike", "503", "UNAVAILABLE", "timed out"]):
+            friendly_text = "⏳ **High Traffic Spike Notice:** Google's analysis servers are temporarily congested. Please re-try in 10 seconds!"
+        else:
+            friendly_text = "⚠️ Could not complete match analysis. Please check team names and try again (e.g. `/analyse Arsenal vs Chelsea`)."
+        await send_clean_message(update, friendly_text)
+    finally:
+        stop_typing.set()
+        typing_task.cancel()
+
+# 13. Photo Message Handler (Direct Upload with Zero Commands Needed)
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_id = user.id
     if user.username and user.username.lower().replace("@", "") in ADMIN_USERNAMES:
         ADMIN_USER_IDS.add(user_id)
-    log_user_activity(user_id, user.username or "", user.first_name or "", query_type="photo")
 
     chat_id = update.effective_chat.id
     media_group_id = update.message.media_group_id
@@ -357,6 +481,32 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         recent_media_groups[media_group_id] = curr_t
 
     caption = (update.message.caption or "").strip()
+
+    # Saturday real match screenshot check
+    if caption.lower().startswith("/analyse") or caption.lower().startswith("/analyze"):
+        is_sat, day_name = is_saturday_today()
+        if not is_sat:
+            await send_clean_message(update, f"📅 The `/analyse` real-world feature is only unlocked on **Saturdays** (Today is {day_name}). For 24/7 Virtual Football, upload without the `/analyse` caption!")
+            return
+        log_user_activity(user_id, user.username or "", user.first_name or "", query_type="analyse_photo")
+        stop_typing = asyncio.Event()
+        typing_task = asyncio.create_task(keep_typing(context, chat_id, stop_typing))
+        try:
+            photo = update.message.photo[-1]
+            photo_file = await context.bot.get_file(photo.file_id)
+            image_bytes = await photo_file.download_as_bytearray()
+            report = await analyze_real_match(image_bytes=image_bytes, text_input=caption)
+            full_output = report + COMPLIANCE_FOOTER
+            await send_clean_message(update, full_output)
+        except Exception as e:
+            await send_clean_message(update, f"⚠️ Could not analyze screenshot: {e}")
+        finally:
+            stop_typing.set()
+            typing_task.cancel()
+        return
+
+    # Standard 24/7 Virtual Football Analysis
+    log_user_activity(user_id, user.username or "", user.first_name or "", query_type="photo")
     stop_typing = asyncio.Event()
     typing_task = asyncio.create_task(keep_typing(context, chat_id, stop_typing))
 
@@ -379,7 +529,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         stop_typing.set()
         typing_task.cancel()
 
-# 13. Text Message Handler (Strictly Screenshots Only Enforcement)
+# 14. Text Message Handler (Strictly Screenshots Only Enforcement + Saturday Tip)
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_id = user.id
@@ -387,20 +537,15 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ADMIN_USER_IDS.add(user_id)
     log_user_activity(user_id, user.username or "", user.first_name or "", query_type="text")
 
-    # Inform user that text matching is disabled and only virtual screenshots are accepted
-    msg = """📸 **SCREENSHOTS ONLY | 24/7 VIRTUAL FOOTBALL** 🎮
+    is_sat, day_name = is_saturday_today()
+    sat_tip = "\n🔥 **Today is Saturday!** You can analyze real-world soccer games using:\n👉 `/analyse Team A vs Team B` (e.g. `/analyse Arsenal vs Chelsea`)\n" if is_sat else f"\n💡 *Real-world match analysis unlocks every Saturday with `/analyse`! Today is {day_name}.*\n"
 
-⚠️ *Text match queries and real-world football are NOT supported.*
+    msg = f"""📸 **SCREENSHOTS ONLY | 24/7 VIRTUAL FOOTBALL** 🎮
+{sat_tip}
+For Virtual & Instant Football (SportyBet, Bet9ja, 1xBet):
+👉 Open your bookmaker's Instant Football fixture, click the **Stats / H2H screen**, take a screenshot and **send the photo directly here**!
 
-This AI operates exclusively on **Virtual & Instant Football simulation screens** (SportyBet Instant Football, Bet9ja Virtuals, 1xBet).
-
-👉 **How to use:**
-1. Open your bookmaker's Instant Football fixture.
-2. Click to open the **Stats / H2H** screen.
-3. Take a screenshot and **send the photo directly here**!
-The AI will immediately extract the simulation seed and deliver the #1 Gold Standard Pick!
-
-Type `/help` for screenshot tips or `/responsible` for bankroll safety guidance."""
+Type `/help` for instructions or `/responsible` for bankroll safety."""
     await send_clean_message(update, msg)
 
 # 14. Admin Analytics Dashboard & Broadcast Commands
@@ -488,6 +633,10 @@ def main():
     app.add_handler(CommandHandler("disclaimer", responsible_command))
     app.add_handler(CommandHandler("privacy", privacy_command))
     app.add_handler(CommandHandler("terms", terms_command))
+
+    # Saturday-Exclusive Real Match Command
+    app.add_handler(CommandHandler("analyse", analyse_command))
+    app.add_handler(CommandHandler("analyze", analyse_command))
 
     # Admin commands
     app.add_handler(CommandHandler("users", users_command))
