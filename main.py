@@ -208,12 +208,10 @@ User Note: {text_input if text_input else 'Extract exact metrics and deliver the
 MANDATORY INSTRUCTIONS:
 1. HEADER LOCK: Identify the EXACT MATCH from the TOP HEADER (e.g. 'AST vs MCI', 'LIV vs BHA', 'BRE vs COV').
 2. PIXEL-EXACT STATS: Read exact Form % circles, League positions, H2H counters (Home Wins, Draws, Away Wins), and Average Goals.
-3. THE 4 RNG PILLARS:
-   - PILLAR 1: NO 1X / NO X2 LAW: Double Chance 1X and X2 are STRICTLY DISQUALIFIED in Virtuals! The ONLY Double Chance selection allowed is Double Chance 12 (Home or Away Win - No Draw) 👑!
-   - PILLAR 2: ZERO-DRAW MASTER KEY: If H2H has >= 2 games and Draws == 0, MANDATORY PICK is Double Chance 12 (Home or Away Win - No Draw) 👑!
-   - PILLAR 3: LOW-GOAL COMPRESSION: If Combined Average Goals <= 1.60, MANDATORY PICK is Under 3.5 Match Goals 👑!
-   - PILLAR 4: GOAL BOUNDS EXCLUSIVE: Use Goal Bound 1–4 Goals 👑 (~90% blanket), Goal Bound 1–3 Goals 👑 (@ ~1.45 odds), or Goal Bound 2–4 Goals 👑!
-4. STRICT DISQUALIFICATIONS: NEVER recommend Double Chance 1X, NEVER recommend Double Chance X2, NEVER recommend Asian Handicap, and NEVER recommend Over 1.5, Over 2.5, 2H Over 0.5, or BTTS Yes!
+3. UNBIASED MULTI-MARKET SELECTION (ZERO PRIORITY BIAS):
+   - Evaluate all available markets on individual merit: Goal Bounds (1–4, 1–3, 2–4, 2–5), Double Chance (1X, X2, 12), Total Goals (Over 1.5, Under 3.5), Draw No Bet (DNB), and Straight Win (1X2).
+   - Apply individual flaw stress tests (e.g. 0-0 risk for Overs, blowout risk for Unders, draw risk for 12, upset risk for 1X/X2).
+   - Deliver the SINGLE HIGHEST risk-adjusted probability option (strictly >= 75.0% Win Probability with Odds >= 1.18). NO MARKET IS BANNED OR ARTIFICIALLY FAVORED.
 
 Apply Framework v11.0 Virtual RNG Decision Engine and provide the single Gold Standard Recommendation!"""
             },
@@ -556,7 +554,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         stop_typing.set()
         typing_task.cancel()
 
-# 14. Text Message Handler (Strictly Screenshots Only Enforcement + Saturday Tip)
+# 14. Text Message Handler (Auto-detects Text Stats or Fixture Queries)
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_id = user.id
@@ -564,13 +562,32 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ADMIN_USER_IDS.add(user_id)
     log_user_activity(user_id, user.username or "", user.first_name or "", query_type="text")
 
+    user_text = update.message.text.strip() if update.message.text else ""
+    
+    # If user provided detailed match stats or fixture breakdown:
+    if len(user_text.splitlines()) >= 3 or any(sep in user_text.lower() for sep in [" vs ", " vs. ", " v "]) or any(k in user_text.lower() for k in ["form", "h2h", "goals scored", "win probability"]):
+        chat_id = update.effective_chat.id
+        stop_typing = asyncio.Event()
+        typing_task = asyncio.create_task(keep_typing(context, chat_id, stop_typing))
+        try:
+            # Route to real-world or virtual engine based on query
+            if any(k in user_text.lower() for k in ["mls", "epl", "premier", "laliga", "serie a", "bundesliga", "ligue 1", "championship", "cup"]):
+                res = await analyze_real_match(text_input=user_text)
+            else:
+                res = await analyze_virtual_match(text_input=user_text)
+            await send_clean_message(update, res)
+            return
+        finally:
+            stop_typing.set()
+            typing_task.cancel()
+
     is_sat, day_name = is_saturday_today()
     sat_tip = "\n🔥 **Today is Saturday!** You can analyze real-world soccer games using:\n👉 `/analyse Team A vs Team B` (e.g. `/analyse Arsenal vs Chelsea`)\n" if is_sat else f"\n💡 *Real-world match analysis unlocks every Saturday with `/analyse`! Today is {day_name}.*\n"
 
-    msg = f"""📸 **SCREENSHOTS ONLY | 24/7 VIRTUAL FOOTBALL** 🎮
+    msg = f"""📸 **24/7 VIRTUAL & REAL-WORLD FOOTBALL AI** 🎮
 {sat_tip}
-For Virtual & Instant Football (SportyBet, Bet9ja, 1xBet):
-👉 Open your bookmaker's Instant Football fixture, click the **Stats / H2H screen**, take a screenshot and **send the photo directly here**!
+For Instant / Virtual Football:
+👉 Send a screenshot of the stats screen OR simply paste the match stats directly here!
 
 Type `/help` for instructions or `/responsible` for bankroll safety."""
     await send_clean_message(update, msg)
