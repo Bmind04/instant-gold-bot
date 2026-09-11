@@ -23,16 +23,17 @@ CRITICAL VIRTUAL FOOTBALL DECISION PRINCIPLES:
      - 🔒 **Goal Bound 1–2 Goals 👑:** (Defensive Gridlock: when combined average goals <= 1.50).
 
    • **MARKET 2: DOUBLE CHANCE (12, 1X, X2):**
-     - 🛡️ **Double Chance 12 (No Draw):** Prioritized when combined average goals >= 2.20 or Draw prob <= 26%, winning on ANY decisive outcome (1-0, 0-1, 2-1, 1-2, 2-3, 3-2).
-     - 🛡️ **Double Chance 1X / X2:** Qualified ONLY when opposing upset probability <= 15% AND odds >= 1.20. Disqualified in open matches (combined goals >= 2.50).
+     - 🛡️ **Double Chance 12 (No Draw):** Prioritized in open matches when combined average goals >= 2.20 or Draw prob <= 26%. STRICTLY DISQUALIFIED if one team has Win Prob >= 70% (heavy favorite low-odds trap) or odds < 1.20.
+     - 🛡️ **Double Chance 1X / X2:** Qualified when opposing upset probability <= 22% AND odds >= 1.20. Disqualified in open matches (combined goals >= 2.50).
 
    • **MARKET 3: TOTAL GOALS (OVER 1.5 & UNDER 3.5):**
      - ⚽ **Over 1.5 Match Goals:** Qualified when Combined Average Goals >= 2.40 and 0-0 risk <= 12% and odds >= 1.20.
      - 🔒 **Under 3.5 Match Goals:** (Replaces Under 2.5) Qualified when Combined Average Goals <= 2.60 and 1H goal prob <= 65% and odds >= 1.20.
+     - ⏱️ **2nd Half Over 0.5 Goals:** STRICTLY DISQUALIFIED if Combined Goals < 2.40 (stalemate trap; mandate Under 3.5 instead).
 
    • **MARKET 4: STRAIGHT 1X2 & DRAW NO BET (DNB):**
      - 👑 **Direct Win (1 or 2):** Qualified ONLY when one team holds overwhelming dominance (Win Prob >= 70% and Form delta >= 30%) with odds >= 1.20.
-     - 🛡️ **Draw No Bet (DNB 1 / DNB 2):** Qualified when favorite has Win Prob >= 55% and Loss Prob <= 15% with odds >= 1.20.
+     - 🛡️ **Draw No Bet (DNB 1 / DNB 2):** Qualified when favorite has Win Prob >= 45% and DNB prob >= 68% with odds >= 1.20.
 
 3. **PURE MERIT-BASED SELECTION FLOW:**
    - **Step 1:** Calculate individual probabilities and stress-test filters for all available markets.
@@ -90,8 +91,8 @@ CRITICAL REAL-WORLD SOCCER ANALYSIS PRINCIPLES:
 
 3. OBJECTIVE MERIT-BASED SELECTION (ZERO PRIORITY BIAS):
    - Evaluate all available betting market routes on pure mathematical merit:
-     • 🛡️ Double Chance (12, 1X, or X2 — prioritize 12 in open games; restrict 1X/X2 when upset risk > 15%)
-     • ⚽ Total Match Goals (Over 1.5, Over 2.5, Under 3.5, Under 4.5 — Under 2.5 is permanently replaced by Under 3.5)
+     • 🛡️ Double Chance (12, 1X, or X2 — prioritize 12 in open games, but strictly BAN 12 on heavy favorites >= 70%; allow 1X/X2 when upset risk <= 22% and odds >= 1.20)
+     • ⚽ Total Match Goals (Over 1.5, Over 2.5, Under 3.5, Under 4.5 — Under 2.5 is permanently replaced by Under 3.5; ban 2nd Half Over 0.5 if match total xG < 2.40)
      • 🎯 Goal Bounds (1–4 Goals, 1–3 Goals, 2–4 Goals)
      • 🛡️ Draw No Bet (DNB 1 / DNB 2)
      • 👑 Direct Win (1X2)
