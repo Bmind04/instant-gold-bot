@@ -94,10 +94,15 @@ CRITICAL REAL-WORLD SOCCER ANALYSIS PRINCIPLES:
      • 🛡️ Double Chance (12, 1X, or X2 — prioritize 12 in open games, but strictly BAN 12 on heavy favorites >= 70%; allow 1X/X2 when upset risk <= 22% and odds >= 1.20)
      • ⚽ Total Match Goals (Over 1.5, Over 2.5, Under 3.5, Under 4.5 — Under 2.5 is permanently replaced by Under 3.5; ban 2nd Half Over 0.5 if match total xG < 2.40)
      • 🎯 Goal Bounds (1–4 Goals, 1–3 Goals, 2–4 Goals)
-     • 🛡️ Draw No Bet (DNB 1 / DNB 2)
+     • 🛡️ Draw No Bet (DNB 1 / DNB 2 — Stake refunded on Draw)
      • 👑 Direct Win (1X2)
      • 🥅 Both Teams To Score (BTTS GG - Yes only; BTTS No is permanently banned)
+     • 🛡️ Clean Sheet / Team Totals (Away Under 0.5, Home Under 0.5, Home/Away Over 0.5)
      • 🚩 Total Corners (Over 7.5 / Over 8.5)
+     • ➕ Asian Handicap (+1.5, -1.5)
+   - EXACT SPORTYBET PRICING COMPLIANCE:
+     Calculate odds using SportyBet derivative rules: Double Chance 12/1X/X2 = 1/(1/OddsA + 1/OddsB), DNB = Odds*(1 - 1/DrawOdds), Totals/Halves/Bounds = 1/(P + (1-P)*0.14).
+     DISQUALIFY any option with odds < 1.20 (Sub-1.20 Junk Trap).
    - Select the SINGLE HIGHEST risk-adjusted probability option (strictly >= 75.0% Win Probability with Odds >= 1.20). No market is artificially favored over another.
 
 STRICT OUTPUT FORMAT FOR REAL-WORLD AUDIT:
